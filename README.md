@@ -91,6 +91,33 @@ To work with the RYLR998 module, you will need:
 **Optional Tools:**
 - **KiCAD** (for viewing/editing circuit schematics) - [Download here](https://www.kicad.org/download/)
 
+### Why Not Arduino UNO or Nano?
+
+You may notice that this project uses the **LGT8F328P** instead of the traditional Arduino UNO or Nano. Here's why:
+
+**The Problem with Standard Arduino UNO/Nano:**
+- Arduino UNO and Nano operate at **5V logic levels**
+- The RYLR998 module operates at **3.3V** and is **not 5V tolerant**
+- Direct connection between 5V Arduino and RYLR998 can **damage the module**
+- Using 5V Arduino requires additional components:
+  - Voltage level shifters (bidirectional logic level converter)
+  - Voltage divider circuits for each signal line
+  - Additional wiring and complexity
+  - More space on breadboard
+  - Higher cost for additional components
+
+**The LGT8F328P Solution:**
+- **LGT8F328P** is a cost-effective alternative that runs at **3.3V natively**
+- **100% Arduino Nano compatible** (same code, same IDE, same libraries)
+- **Direct connection** to RYLR998 without any level shifting
+- **Simplified wiring** and fewer components
+- **Lower project cost** (no need for level shifters)
+- **More reliable** (fewer connections = fewer potential failures)
+
+**Can you still use Arduino UNO/Nano?**
+
+Yes, you can! But you'll need to add level shifting circuitry between the Arduino (5V) and RYLR998 (3.3V). While this is certainly possible, it adds complexity that this tutorial aims to avoid. By using native 3.3V microcontrollers (ESP8266, LGT8F328P, Raspberry Pi Pico), we keep the projects simple, safe, and beginner-friendly.
+
 ### Important Notes
 
 ⚠️ **Voltage Level**: The RYLR998 operates at **3.3V**. Do not connect it directly to 5V microcontrollers (like standard Arduino Uno) without level shifting.
