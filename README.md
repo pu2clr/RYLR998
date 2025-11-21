@@ -1,6 +1,11 @@
 
 # RYLR998
 
+This project provides a comprehensive, step-by-step tutorial for developing IoT applications using the RYLR998 LoRa® transceiver module from REYAX Technology. Designed for hobbyists, IoT enthusiasts, electronics technicians, and educational robotics practitioners, this guide covers everything from initial setup and configuration to advanced application development. Whether you're building long-range sensor networks, exploring LoRa technology for the first time, or implementing professional IoT solutions, this repository offers practical examples, detailed documentation, and ready-to-use code for popular microcontroller platforms like ESP8266, LGT8F328P, and Raspberry Pi Pico (MicroPython).
+
+
+## About RYLR998
+
 The RYLR998, developed by REYAX Technology, is a compact LoRa® transceiver module designed for ultra-long-range communication, high interference resistance, and low power consumption. Operating in the 868/915 MHz frequency range, it integrates a NUVOTON MCU and Semtech LoRa® engine, supports UART with AT commands, and achieves transmission distances of up to 20 km in ideal conditions—all within a small 32×14×2.2 mm form factor suitable for space-limited applications.
 Compared to traditional wireless methods like FSK or GFSK, the RYLR998 offers higher sensitivity (down to -129 dBm) and extended battery life, making it ideal for IoT devices that rely on efficient energy use. Despite its slightly higher cost, its superior range, reliability, and efficiency make it a cost-effective alternative for markets such as smart homes, agriculture, vehicles, mobile devices, and energy monitoring, helping enterprises build IoT solutions more effectively. See [REYAX new LoRa® Antenna Transceiver Module RYLR998](https://reyax.com/news_d.php?nw=3)
 
@@ -14,11 +19,30 @@ RYLR998/
 ├── README.md                    # Main project documentation
 ├── examples/                    # Code examples for different platforms
 │   ├── ESP8266/                # Examples using ESP8266 (NodeMCU, Wemos D1, etc.)
-│   └── LGT8F328P/              # Examples using LGT8F328P (3.3V Arduino Nano compatible)
+│   ├── LGT8F328P/              # Examples using LGT8F328P (3.3V Arduino Nano compatible)
+│   └── RaspberryPi_Pico/       # Examples using Raspberry Pi Pico (MicroPython)
 ├── docs/                       # Additional documentation and guides
 ├── images/                     # Photos and diagrams
 └── schematics/                 # Circuit diagrams and connection schematics
+    └── kicad/                  # KiCAD project files (.kicad_pro, .kicad_sch, .kicad_pcb)
 ```
+
+### About Schematics and Diagrams
+
+All circuit schematics in this project are created using **KiCAD** (version 7.0 or higher), a free and open-source electronics design automation (EDA) suite. KiCAD files are provided in the `schematics/kicad/` directory, allowing you to:
+
+- View and modify circuit designs
+- Generate your own PCB layouts
+- Export schematics to PDF or image formats
+- Customize connections for your specific needs
+
+**To use the KiCAD files:**
+1. Download and install [KiCAD](https://www.kicad.org/download/) (free and cross-platform)
+2. Open the `.kicad_pro` project files from the `schematics/kicad/` folder
+3. View schematics (`.kicad_sch`) and PCB layouts (`.kicad_pcb`) if available
+4. Export to your preferred format (PDF, PNG, SVG, etc.)
+
+Pre-rendered schematic images are also available in the `images/` folder for quick reference.
 
 
 ## About the Device RYLR998
@@ -58,10 +82,14 @@ To work with the RYLR998 module, you will need:
 2. **Microcontroller** (choose one):
    - ESP8266 (NodeMCU, Wemos D1 Mini, etc.)
    - LGT8F328P (3.3V Arduino Nano compatible)
+   - Raspberry Pi Pico (MicroPython)
    - Any other 3.3V microcontroller with UART
 3. **USB-to-TTL Converter** (for initial testing and configuration)
 4. **Breadboard and Jumper Wires**
 5. **Power Supply** (3.3V regulated)
+
+**Optional Tools:**
+- **KiCAD** (for viewing/editing circuit schematics) - [Download here](https://www.kicad.org/download/)
 
 ### Important Notes
 
@@ -70,6 +98,7 @@ To work with the RYLR998 module, you will need:
 ✅ **Compatible Platforms**:
 - ESP8266 (native 3.3V)
 - LGT8F328P (3.3V operation)
+- Raspberry Pi Pico (native 3.3V, MicroPython support)
 - ESP32 (native 3.3V)
 - STM32 (3.3V variants)
 - Any 3.3V microcontroller with UART
@@ -223,6 +252,40 @@ The LGT8F328P is an Arduino Nano-compatible microcontroller that operates at 3.3
 | TXD | D2 (RX) | Software Serial or Hardware Serial |
 
 See the `examples/LGT8F328P/` folder for complete working examples.
+
+
+## Development with Raspberry Pi Pico (MicroPython)
+
+The Raspberry Pi Pico is an excellent platform for RYLR998 projects, featuring native 3.3V operation, dual-core ARM Cortex-M0+ processor, and excellent MicroPython support.
+
+### Wiring Diagram (Raspberry Pi Pico)
+
+| RYLR998 Pin | Pico Pin | GPIO | Notes |
+|-------------|----------|------|-------|
+| VDD | 3.3V (Pin 36) | - | Power |
+| GND | GND (Pin 38) | - | Ground |
+| RXD | GP4 (Pin 6) | UART1 TX | Software or Hardware Serial TX |
+| TXD | GP5 (Pin 7) | UART1 RX | Software or Hardware Serial RX |
+
+### MicroPython Setup
+
+1. **Install MicroPython**: Flash MicroPython firmware to your Raspberry Pi Pico ([download here](https://micropython.org/download/rp2-pico/))
+2. **IDE Options**:
+   - Thonny (recommended for beginners)
+   - Visual Studio Code with Pico-W-Go extension
+   - uPyCraft
+3. **UART Configuration**: MicroPython makes UART communication simple with built-in libraries
+
+### Why Raspberry Pi Pico?
+
+- **Native 3.3V**: Direct connection to RYLR998 without level shifters
+- **MicroPython**: Easy-to-learn Python syntax, ideal for rapid prototyping
+- **Multiple UART**: Two hardware UART interfaces available
+- **Low Cost**: Affordable platform for learning and prototyping
+- **Rich Ecosystem**: Extensive library support and community resources
+- **Educational**: Perfect for teaching IoT concepts and LoRa communication
+
+See the `examples/RaspberryPi_Pico/` folder for complete MicroPython examples.
 
 
 ## RYLR998 Applications
