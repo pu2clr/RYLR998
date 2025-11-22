@@ -1,6 +1,6 @@
 # LGT8F328P Warmup Examples
 
-## 🔥 About This Section
+## About This Section
 
 This **Warmup** folder contains basic introductory examples designed to help you get started with the RYLR998 LoRa module and LGT8F328P microcontroller. These examples use simple, straightforward applications to help you:
 
@@ -12,7 +12,7 @@ This **Warmup** folder contains basic introductory examples designed to help you
 
 Think of these as your first steps into the world of LoRa IoT development—simple, practical, and educational!
 
-### 🎯 What You'll Learn
+### What You'll Learn
 
 - How to connect RYLR998 to LGT8F328P
 - Basic AT command usage
@@ -21,7 +21,7 @@ Think of these as your first steps into the world of LoRa IoT development—simp
 - Simple remote control applications
 - Debugging techniques with Serial Monitor
 
-### 🚀 Moving Forward
+### Moving Forward
 
 Once you're comfortable with these warmup examples, you'll be ready to explore more advanced topics like:
 - Sensor data transmission
