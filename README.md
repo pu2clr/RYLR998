@@ -6,7 +6,7 @@ This project provides a comprehensive, step-by-step tutorial for developing IoT 
 
 ## About RYLR998
 
-The RYLR998, developed by REYAX Technology, is a compact LoRa® transceiver module designed for ultra-long-range communication, high interference resistance, and low power consumption. Operating in the 868/915 MHz frequency range, it integrates a NUVOTON MCU and Semtech LoRa® engine, supports UART with AT commands, and achieves transmission distances of up to 20 km in ideal conditions—all within a small 32×14×2.2 mm form factor suitable for space-limited applications.
+The RYLR998, developed by REYAX Technology, is a compact LoRa® transceiver module designed for ultra-long-range communication, high interference resistance, and low power consumption. Operating in the 868/915 MHz frequency range, it integrates a NUVOTON MCU and Semtech LoRa® engine, supports UART with AT commands, and achieves transmission distances of up to 8 km or more in ideal conditions—all within a small 32×14×2.2 mm form factor suitable for space-limited applications.
 Compared to traditional wireless methods like FSK or GFSK, the RYLR998 offers higher sensitivity (down to -129 dBm) and extended battery life, making it ideal for IoT devices that rely on efficient energy use. Despite its slightly higher cost, its superior range, reliability, and efficiency make it a cost-effective alternative for markets such as smart homes, agriculture, vehicles, mobile devices, and energy monitoring, helping enterprises build IoT solutions more effectively. See [REYAX new LoRa® Antenna Transceiver Module RYLR998](https://reyax.com/news_d.php?nw=3)
 
 
@@ -55,7 +55,7 @@ Pre-rendered schematic images are also available in the `images/` folder for qui
 | **Operating Voltage** | 3.3V (2.0V - 3.6V) |
 | **Transmission Power** | Up to +20 dBm |
 | **Receive Sensitivity** | Down to -148 dBm |
-| **Communication Distance** | Up to 20 km (open field) |
+| **Communication Distance** | Up to 8 km (open field) |
 | **Interface** | UART (3.3V TTL) |
 | **Baud Rate** | 115200 bps (default) |
 | **Dimensions** | 32 × 14 × 2.2 mm |
@@ -359,3 +359,11 @@ The RYLR998's long-range, low-power characteristics make it ideal for various Io
 * [LoRa Distance Testing With RYLR998 in Open Field - Amazing Results!](https://www.instructables.com/LoRa-Distance-Testing-With-RYLR998-in-Open-Field-A/)
 * [Greenhouse Monitoring System - LoRa IoT](https://hackaday.io/project/191787-greenhouse-monitoring-system-lora-iot)
 * [Reyax-LoRa-Module-RYLR998-Review](https://github.com/make2explore/Reyax-LoRa-Module-RYLR998-Review)
+
+### Youtube Videos
+
+* [Arduino meets RYLR998: A Comprehensive Guide to LoRa Module Integration](https://www.youtube.com/watch?v=LiWlPERp1ec)
+* [Build a LoRa Communication System with Raspberry Pi Pico W: Long Range IoT Made Easy](https://youtu.be/XV_J2V2Bvx4?si=5xlIV3VWW4YSjypp)
+* [[Device Overview] Reyax RYLR998 LoRa Module](https://youtu.be/UFjA9VwudE0?si=0WFuCLBDOUsNfleN)
+* [RYLR998 LoRa Module Range Testing](https://youtu.be/dzdASqc0R0U?si=ONYbiuMHpEWkxqXu)
+* []()
