@@ -1,9 +1,24 @@
 /*
- * RYLR998 Receiver - LED Control Example
+ * RYLR998 Receiver - Proof of Concept with Signal Quality Indicator
  * 
- * This sketch demonstrates how to receive LoRa commands using the RYLR998 module
- * connected to an LGT8F328P (3.3V Arduino Nano compatible) and control an LED
- * based on received commands.
+ * This sketch serves as a simple Proof of Concept (PoC) tool for testing LoRa RYLR998
+ * communication. It receives LoRa commands, controls an LED, and provides visual feedback
+ * of signal quality through a traffic light indicator (green/yellow/red LEDs).
+ * 
+ * Proof of Concept Features:
+ * --------------------------
+ * 1. Remote LED Control: Validates basic LoRa command transmission
+ * 2. Signal Quality Monitoring: Visual RSSI-based quality indicator
+ * 3. Range Testing: Combined with transmitter for coverage assessment
+ * 4. Serial Debugging: Detailed message analysis with RSSI/SNR values
+ * 
+ * Use Cases:
+ * ----------
+ * - Verify LoRa module connectivity and configuration
+ * - Test signal coverage in different locations
+ * - Assess signal quality before deploying final application
+ * - Learn LoRa basics with immediate visual feedback
+ * - Validate network parameters and antenna setup
  * 
  * Hardware Connections:
  * ---------------------
@@ -12,17 +27,28 @@
  * RYLR998 VDD -> 3.3V
  * RYLR998 GND -> GND
  * 
- * LED (+)     -> LGT8F328P Pin 6 (with 220Ω resistor)
- * LED (-)     -> GND
+ * Command LED (Blinks with commands):
+ * LED (+)     -> LGT8F328P Pin 6 (with 220Ω resistor) -> GND
+ * 
+ * Signal Quality Indicator (Traffic Light):
+ * Green LED   -> LGT8F328P Pin 7 (with 220Ω resistor) -> GND  [Excellent signal]
+ * Yellow LED  -> LGT8F328P Pin 8 (with 220Ω resistor) -> GND  [Good signal]
+ * Red LED     -> LGT8F328P Pin 9 (with 220Ω resistor) -> GND  [Weak signal]
+ * 
+ * Signal Quality Thresholds:
+ * --------------------------
+ * GREEN  (Excellent): RSSI > -80 dBm  - Strong signal, optimal for communication
+ * YELLOW (Good):      RSSI -80 to -100 dBm - Acceptable signal, reliable communication
+ * RED    (Weak):      RSSI < -100 dBm - Weak signal, may have packet loss
  * 
  * Commands:
  * ---------
- * "TURN ON"  - Turns the LED ON
- * "TURN OFF" - Turns the LED OFF
+ * "TURN ON"  - Turns the command LED ON
+ * "TURN OFF" - Turns the command LED OFF
  * 
  * Message Format from RYLR998:
  * +RCV=<address>,<length>,<data>,<RSSI>,<SNR>
- * Example: +RCV=100,7,TURN ON,-45,10
+ * Example: +RCV=6,7,TURN ON,-78,12
  * 
  * Author: PU2CLR
  * Date: November 2025
@@ -34,7 +60,16 @@
 // Pin definitions
 #define LORA_RX_PIN 4      // Connect to RYLR998 TX
 #define LORA_TX_PIN 5      // Connect to RYLR998 RX
-#define LED_PIN 6          // LED control pin
+#define LED_PIN 6          // Command LED (blinks with commands)
+
+// Signal quality indicator LEDs (Traffic Light)
+#define LED_GREEN_PIN 7    // Excellent signal (RSSI > -80 dBm)
+#define LED_YELLOW_PIN 8   // Good signal (RSSI -80 to -100 dBm)
+#define LED_RED_PIN 9      // Weak signal (RSSI < -100 dBm)
+
+// Signal quality thresholds
+#define RSSI_EXCELLENT -80   // Green LED threshold
+#define RSSI_GOOD -100       // Yellow/Red LED threshold
 
 // RYLR998 module configuration
 #define LORA_BAUD_RATE 115200
@@ -51,19 +86,40 @@ bool ledState = false;
 void setup() {
   // Initialize Serial Monitor for debugging
   Serial.begin(115200);
-  while (!Serial) {
-    ; // Wait for serial port to connect
-  }
+  while (!Serial);
   
-  Serial.println("=================================");
-  Serial.println("RYLR998 Receiver - LED Control");
-  Serial.println("=================================");
+  Serial.println("=================================================");
+  Serial.println("RYLR998 Receiver - Proof of Concept Tool");
+  Serial.println("With Signal Quality Indicator");
+  Serial.println("=================================================");
   Serial.println();
   
-  // Initialize LED pin
+  // Initialize command LED
   pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);  // Start with LED OFF
-  Serial.println("LED initialized (Pin 6) - OFF");
+  digitalWrite(LED_PIN, LOW);
+  Serial.println("Command LED initialized (Pin 6)");
+  
+  // Initialize signal quality indicator LEDs
+  pinMode(LED_GREEN_PIN, OUTPUT);
+  pinMode(LED_YELLOW_PIN, OUTPUT);
+  pinMode(LED_RED_PIN, OUTPUT);
+  
+  // Initial LED test - traffic light sequence
+  Serial.println("Testing signal quality LEDs...");
+  digitalWrite(LED_GREEN_PIN, HIGH);
+  delay(500);
+  digitalWrite(LED_GREEN_PIN, LOW);
+  digitalWrite(LED_YELLOW_PIN, HIGH);
+  delay(500);
+  digitalWrite(LED_YELLOW_PIN, LOW);
+  digitalWrite(LED_RED_PIN, HIGH);
+  delay(500);
+  digitalWrite(LED_RED_PIN, LOW);
+  Serial.println("Signal Quality Indicator ready:");
+  Serial.println("  Pin 7 (GREEN)  = Excellent signal (RSSI > -80 dBm)");
+  Serial.println("  Pin 8 (YELLOW) = Good signal (-80 to -100 dBm)");
+  Serial.println("  Pin 9 (RED)    = Weak signal (< -100 dBm)");
+  Serial.println();
   
   // Initialize LoRa serial communication
   loraSerial.begin(LORA_BAUD_RATE);
@@ -74,9 +130,10 @@ void setup() {
   configureLoRaModule();
   
   Serial.println();
-  Serial.println("System ready! Waiting for commands...");
-  Serial.println("Valid commands: 'TURN ON' or 'TURN OFF'");
-  Serial.println("=================================");
+  Serial.println("=================================================");
+  Serial.println("System ready! Waiting for LoRa messages...");
+  Serial.println("Monitor both command LED and signal quality LEDs");
+  Serial.println("=================================================");
   Serial.println();
 }
 
@@ -155,6 +212,34 @@ void sendATCommand(String command) {
 }
 
 /**
+ * Display signal quality using traffic light LEDs
+ * Based on RSSI value
+ */
+void displaySignalQuality(int rssi) {
+  // Turn off all signal LEDs first
+  digitalWrite(LED_GREEN_PIN, LOW);
+  digitalWrite(LED_YELLOW_PIN, LOW);
+  digitalWrite(LED_RED_PIN, LOW);
+  
+  // Display quality based on RSSI thresholds
+  if (rssi > RSSI_EXCELLENT) {
+    // Excellent signal - Green LED
+    digitalWrite(LED_GREEN_PIN, HIGH);
+    Serial.println("Signal Quality: EXCELLENT (Green)");
+  } 
+  else if (rssi > RSSI_GOOD) {
+    // Good signal - Yellow LED
+    digitalWrite(LED_YELLOW_PIN, HIGH);
+    Serial.println("Signal Quality: GOOD (Yellow)");
+  } 
+  else {
+    // Weak signal - Red LED
+    digitalWrite(LED_RED_PIN, HIGH);
+    Serial.println("Signal Quality: WEAK (Red)");
+  }
+}
+
+/**
  * Process received LoRa message
  * Format: +RCV=<address>,<length>,<data>,<RSSI>,<SNR>
  */
@@ -189,6 +274,10 @@ void processReceivedMessage(String message) {
       Serial.println("Command: " + data);
       Serial.println("RSSI: " + rssi + " dBm");
       Serial.println("SNR: " + snr + " dB");
+      
+      // Convert RSSI to integer and display signal quality
+      int rssiValue = rssi.toInt();
+      displaySignalQuality(rssiValue);
       
       // Process the command
       processCommand(data);

@@ -1,8 +1,18 @@
 /*
- * RYLR998 Transmitter - LED Control Example
+ * RYLR998 Transmitter - Range Testing Tool
  * 
- * This sketch demonstrates how to send LoRa commands using the RYLR998 module
- * connected to an LGT8F328P (3.3V Arduino Nano compatible) to control a remote LED.
+ * This sketch automatically sends alternating LoRa commands (TURN ON/TURN OFF) every
+ * 1 second to test the range and coverage of your LoRa network. The remote LED will
+ * blink continuously, allowing you to verify signal reception at different locations.
+ * 
+ * Use Case:
+ * --------
+ * - Place this transmitter at a strategic location (fixed position)
+ * - Walk around with the receiver to test coverage area
+ * - Monitor LED blinking and Serial output to verify connectivity
+ * - Check RSSI and SNR values to assess signal quality
+ * - Identify dead zones or areas with weak signal
+ * - Optimize antenna placement and orientation
  * 
  * Hardware Connections:
  * ---------------------
@@ -11,16 +21,17 @@
  * RYLR998 VDD -> 3.3V
  * RYLR998 GND -> GND
  * 
- * Button 1    -> LGT8F328P Pin 7 (with pull-up resistor) - TURN ON
- * Button 2    -> LGT8F328P Pin 8 (with pull-up resistor) - TURN OFF
+ * No buttons required - automatic operation!
  * 
- * Commands Sent:
- * --------------
- * Button 1 pressed -> Sends "TURN ON" command
- * Button 2 pressed -> Sends "TURN OFF" command
+ * Operation:
+ * ----------
+ * - Automatically sends "TURN ON" command
+ * - Waits 1 second (1000ms)
+ * - Automatically sends "TURN OFF" command
+ * - Waits 1 second (1000ms)
+ * - Repeats indefinitely
  * 
- * You can also send commands via Serial Monitor:
- * Type "ON" or "OFF" in the Serial Monitor
+ * The receiver LED will blink at 1-second intervals if within range.
  * 
  * Author: PU2CLR
  * Date: November 2025
@@ -32,21 +43,23 @@
 // Pin definitions
 #define LORA_RX_PIN 4      // Connect to RYLR998 TX
 #define LORA_TX_PIN 5      // Connect to RYLR998 RX
-#define BUTTON_ON_PIN 7    // Button to send TURN ON
-#define BUTTON_OFF_PIN 8   // Button to send TURN OFF
 
 // RYLR998 module configuration
 #define LORA_BAUD_RATE 115200
-#define DEVICE_ADDRESS 6    // This device address
-#define TARGET_ADDRESS 1    // Receiver device address
+#define DEVICE_ADDRESS 6      // This device address
+#define TARGET_ADDRESS 1      // Receiver device address
 #define NETWORK_ID 6          // Network ID (must match receiver)
+
+// Range testing configuration
+#define BLINK_INTERVAL 1000   // 1000ms = 1 second between commands
 
 // Create SoftwareSerial object for RYLR998
 SoftwareSerial loraSerial(LORA_RX_PIN, LORA_TX_PIN);
 
-// Button debounce variables
-unsigned long lastButtonPress = 0;
-const unsigned long debounceDelay = 300;  // 300ms debounce
+// Timing and state variables
+unsigned long lastTransmission = 0;
+bool ledState = false;  // false = OFF, true = ON
+unsigned long messageCount = 0;
 
 void setup() {
   // Initialize Serial Monitor
@@ -55,17 +68,19 @@ void setup() {
     ; // Wait for serial port to connect
   }
   
-  Serial.println("====================================");
-  Serial.println("RYLR998 Transmitter - LED Control");
-  Serial.println("====================================");
+  Serial.println("==========================================");
+  Serial.println("RYLR998 Range Testing Transmitter");
+  Serial.println("==========================================");
   Serial.println();
-  
-  // Initialize button pins with internal pull-up resistors
-  pinMode(BUTTON_ON_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_OFF_PIN, INPUT_PULLUP);
-  Serial.println("Buttons initialized:");
-  Serial.println("  Pin 7: TURN ON button");
-  Serial.println("  Pin 8: TURN OFF button");
+  Serial.println("This device will automatically send");
+  Serial.println("TURN ON/OFF commands every 1 second.");
+  Serial.println();
+  Serial.println("Use this to test LoRa coverage:");
+  Serial.println("1. Place this transmitter at a fixed location");
+  Serial.println("2. Walk around with the receiver");
+  Serial.println("3. Monitor LED blinking and RSSI/SNR values");
+  Serial.println("4. Identify coverage areas and dead zones");
+  Serial.println();
   
   // Initialize LoRa serial communication
   loraSerial.begin(LORA_BAUD_RATE);
@@ -78,36 +93,54 @@ void setup() {
   
   Serial.println();
   Serial.println("System ready!");
-  Serial.println("====================================");
-  Serial.println("Press buttons or type commands:");
-  Serial.println("  Button Pin 7 or type 'ON'  -> Send TURN ON");
-  Serial.println("  Button Pin 8 or type 'OFF' -> Send TURN OFF");
-  Serial.println("====================================");
+  Serial.println("==========================================");
+  Serial.println("Starting automatic transmission...");
+  Serial.println("Sending commands every 1 second");
+  Serial.println("Monitor receiver for LED blinking");
+  Serial.println("==========================================");
   Serial.println();
+  
+  // Initialize timing
+  lastTransmission = millis();
 }
 
 void loop() {
-  // Check button states
-  checkButtons();
+  unsigned long currentTime = millis();
   
-  // Check for Serial commands
+  // Check if it's time to send next command
+  if (currentTime - lastTransmission >= BLINK_INTERVAL) {
+    lastTransmission = currentTime;
+    messageCount++;
+    
+    // Toggle LED state and send appropriate command
+    if (ledState) {
+      sendLoRaCommand("TURN OFF");
+      ledState = false;
+    } else {
+      sendLoRaCommand("TURN ON");
+      ledState = true;
+    }
+    
+    // Display statistics
+    Serial.print("[Message #");
+    Serial.print(messageCount);
+    Serial.print("] Next transmission in ");
+    Serial.print(BLINK_INTERVAL / 1000);
+    Serial.println(" second(s)");
+    Serial.println();
+  }
+  
+  // Check for manual AT commands via Serial Monitor (for testing)
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n');
     command.trim();
-    command.toUpperCase();
     
-    if (command == "ON") {
-      sendLoRaCommand("TURN ON");
-    } 
-    else if (command == "OFF") {
-      sendLoRaCommand("TURN OFF");
-    }
-    else if (command.startsWith("AT")) {
-      // Allow direct AT commands for testing
+    if (command.startsWith("AT")) {
+      Serial.println("[Manual AT Command]");
       sendATCommand(command);
-    }
-    else {
-      Serial.println("Unknown command. Use 'ON' or 'OFF'");
+    } else {
+      Serial.println("Only AT commands accepted in auto mode.");
+      Serial.println("Example: AT+PARAMETER?");
     }
   }
   
@@ -118,33 +151,6 @@ void loop() {
     if (response.length() > 0) {
       Serial.print("LoRa: ");
       Serial.println(response);
-    }
-  }
-}
-
-/**
- * Check button states and send commands
- */
-void checkButtons() {
-  unsigned long currentTime = millis();
-  
-  // Check TURN ON button (active LOW because of pull-up)
-  if (digitalRead(BUTTON_ON_PIN) == LOW) {
-    if (currentTime - lastButtonPress > debounceDelay) {
-      Serial.println();
-      Serial.println(">>> Button ON pressed <<<");
-      sendLoRaCommand("TURN ON");
-      lastButtonPress = currentTime;
-    }
-  }
-  
-  // Check TURN OFF button (active LOW because of pull-up)
-  if (digitalRead(BUTTON_OFF_PIN) == LOW) {
-    if (currentTime - lastButtonPress > debounceDelay) {
-      Serial.println();
-      Serial.println(">>> Button OFF pressed <<<");
-      sendLoRaCommand("TURN OFF");
-      lastButtonPress = currentTime;
     }
   }
 }
