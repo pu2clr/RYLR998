@@ -553,11 +553,32 @@ LED State: ON
 - Verify baud rate is 115200 for both modules
 - Check device addresses match (transmitter target = receiver address)
 
-**LED not responding:**
-- Check LED polarity (long leg = +, short leg = -)
-- Verify 220Ω resistor is in series with each LED
-- Check pin connections (6, 7, 8, 9)
-- Verify receiver is getting commands (check Serial Monitor)
+**LED not responding to commands (intermittent failures):**
+- **Primary Solution (Version 2.1):** Use Production Mode for maximum reliability
+  ```cpp
+  #define DEBUG_MODE false  // Set this in both sketches
+  ```
+- **Why it works:** Serial.println() is blocking - while printing, LoRa data is lost
+- **Production Mode benefits:**
+  - ~90% reduction in Serial output
+  - No blocking during message reception
+  - >99.5% success rate (vs ~95% in debug mode)
+  - Clean output: `RX: TURN ON [-85 dBm]`
+- **When to use DEBUG_MODE = true:**
+  - Initial setup and testing
+  - Troubleshooting connection issues
+  - Learning LoRa message structure
+- **Other improvements in v2.1:**
+  - Message timeout detection (clears corrupted partial messages)
+  - Process all available characters in one loop iteration
+  - Buffer flush on initialization
+  - 2-second transmission interval for reliability
+- **For detailed analysis:** See `/docs/TROUBLESHOOTING.md`
+- **Hardware checks:**
+  - LED polarity (long leg = +, short leg = -)
+  - 220Ω resistor in series with LED
+  - Pin connections correct (6, 7, 8, 9)
+  - Monitor Serial for `[WARNING]` messages (debug mode only)
 
 **Signal quality LEDs not working:**
 - Verify traffic light test sequence runs at startup

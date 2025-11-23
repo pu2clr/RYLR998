@@ -55,7 +55,33 @@
  * License: MIT
  */
 
+// ============================================================================
+// SOFTWARESERIAL BUFFER CONFIGURATION
+// ============================================================================
+// Increase SoftwareSerial buffer from default 64 bytes to 256 bytes
+// This MUST be defined BEFORE including SoftwareSerial.h
+//
+// LGT8F328P has 2KB RAM, so 256 bytes (~12% RAM) is safe
+// Benefits: Reduces buffer overflow during Serial.println() blocking
+// Cost: Uses more RAM (256 bytes instead of 64 bytes)
+//
+// Note: Even with larger buffer, DEBUG_MODE=false is still recommended
+//       for maximum reliability in production use.
+// ============================================================================
+#define _SS_MAX_RX_BUFF 256  // Default is 64 bytes
+
 #include <SoftwareSerial.h>
+
+// ============================================================================
+// DEBUG CONFIGURATION
+// ============================================================================
+// Set to 'false' for production use (minimal Serial output, better reliability)
+// Set to 'true' for debugging (detailed Serial output, may cause message loss)
+//
+// IMPORTANT: Serial.println() is BLOCKING and can cause SoftwareSerial buffer
+// overflow. For best reliability, use DEBUG_MODE = false.
+// ============================================================================
+#define DEBUG_MODE false  // Change to 'true' only when troubleshooting
 
 // Pin definitions
 #define LORA_RX_PIN 4      // Connect to RYLR998 TX
@@ -93,7 +119,7 @@
 // VALIDATION METHOD:
 // ------------------
 // 1. During field tests, note RSSI values at different distances
-// 2. Count packet losses at each location (transmitter sends every 1 second)
+// 2. Count packet losses at each location (transmitter sends every 1,5 second)
 // 3. Adjust thresholds based on your requirements:
 //    - Green:  0% packet loss acceptable
 //    - Yellow: 0-5% packet loss acceptable
@@ -145,22 +171,29 @@ SoftwareSerial loraSerial(LORA_RX_PIN, LORA_TX_PIN);
 // Variables
 String receivedData = "";
 bool ledState = false;
+unsigned long lastCharTime = 0;  // Timeout detection
+#define RX_TIMEOUT 1500  // 1 second timeout for incomplete messages
 
 void setup() {
   // Initialize Serial Monitor for debugging
   Serial.begin(115200);
   while (!Serial);
   
-  Serial.println("=================================================");
-  Serial.println("RYLR998 Receiver - Proof of Concept Tool");
-  Serial.println("With Signal Quality Indicator");
-  Serial.println("=================================================");
-  Serial.println();
+  if (DEBUG_MODE) {
+    Serial.println("=================================================");
+    Serial.println("RYLR998 Receiver - Proof of Concept Tool");
+    Serial.println("With Signal Quality Indicator");
+    Serial.println("DEBUG MODE: ON (May affect reliability)");
+    Serial.println("=================================================");
+    Serial.println();
+  } else {
+    Serial.println("RYLR998 RX Ready [Production Mode]");
+  }
   
   // Initialize command LED
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
-  Serial.println("Command LED initialized (Pin 6)");
+  if (DEBUG_MODE) Serial.println("Command LED initialized (Pin 6)");
   
   // Initialize signal quality indicator LEDs
   pinMode(LED_GREEN_PIN, OUTPUT);
@@ -168,7 +201,7 @@ void setup() {
   pinMode(LED_RED_PIN, OUTPUT);
   
   // Initial LED test - traffic light sequence
-  Serial.println("Testing signal quality LEDs...");
+  if (DEBUG_MODE) Serial.println("Testing signal quality LEDs...");
 
   digitalWrite(LED_PIN, HIGH);
   digitalWrite(LED_GREEN_PIN, HIGH);
@@ -182,33 +215,54 @@ void setup() {
   digitalWrite(LED_RED_PIN, LOW);
   digitalWrite(LED_PIN, LOW);
   
-
-  Serial.println("Signal Quality Indicator ready:");
-  Serial.println("  Pin 7 (GREEN)  = Excellent signal (RSSI > -80 dBm)");
-  Serial.println("  Pin 8 (YELLOW) = Good signal (-80 to -100 dBm)");
-  Serial.println("  Pin 9 (RED)    = Weak signal (< -100 dBm)");
-  Serial.println();
+  if (DEBUG_MODE) {
+    Serial.println("Signal Quality Indicator ready:");
+    Serial.println("  Pin 7 (GREEN)  = Excellent signal (RSSI > -80 dBm)");
+    Serial.println("  Pin 8 (YELLOW) = Good signal (-80 to -100 dBm)");
+    Serial.println("  Pin 9 (RED)    = Weak signal (< -100 dBm)");
+    Serial.println();
+  }
   
   // Initialize LoRa serial communication
   loraSerial.begin(LORA_BAUD_RATE);
   delay(100);
   
+  // Clear any garbage in the buffer
+  while (loraSerial.available()) {
+    loraSerial.read();
+  }
+  
   // Configure RYLR998 module
-  Serial.println("Configuring RYLR998 module...");
+  if (DEBUG_MODE) Serial.println("Configuring RYLR998 module...");
   configureLoRaModule();
   
-  Serial.println();
-  Serial.println("=================================================");
-  Serial.println("System ready! Waiting for LoRa messages...");
-  Serial.println("Monitor both command LED and signal quality LEDs");
-  Serial.println("=================================================");
-  Serial.println();
+  if (DEBUG_MODE) {
+    Serial.println();
+    Serial.println("=================================================");
+    Serial.println("System ready! Waiting for LoRa messages...");
+    Serial.println("Monitor both command LED and signal quality LEDs");
+    Serial.println("=================================================");
+    Serial.println();
+  } else {
+    Serial.println("Ready. Waiting for messages...");
+  }
 }
 
 void loop() {
+  // Check for timeout on incomplete messages
+  if (receivedData.length() > 0 && (millis() - lastCharTime > RX_TIMEOUT)) {
+    if (DEBUG_MODE) {
+      Serial.println("[WARNING] Incomplete message timeout. Buffer cleared.");
+      Serial.print("Discarded data: ");
+      Serial.println(receivedData);
+    }
+    receivedData = "";
+  }
+  
   // Check if data is available from RYLR998
-  if (loraSerial.available()) {
+  while (loraSerial.available()) {  // Changed from 'if' to 'while' to process all available
     char c = loraSerial.read();
+    lastCharTime = millis();  // Update timeout timer
     
     // Build the received string
     if (c == '\n') {
@@ -233,30 +287,34 @@ void loop() {
  */
 void configureLoRaModule() {
   // Test communication
-  Serial.print("Testing communication... ");
+  if (DEBUG_MODE) Serial.print("Testing communication... ");
   sendATCommand("AT");
   delay(500);
   
   // Set device address
-  Serial.print("Setting address to ");
-  Serial.print(DEVICE_ADDRESS);
-  Serial.print("... ");
+  if (DEBUG_MODE) {
+    Serial.print("Setting address to ");
+    Serial.print(DEVICE_ADDRESS);
+    Serial.print("... ");
+  }
   sendATCommand("AT+ADDRESS=" + String(DEVICE_ADDRESS));
   delay(500);
   
   // Set network ID
-  Serial.print("Setting network ID to ");
-  Serial.print(NETWORK_ID);
-  Serial.print("... ");
+  if (DEBUG_MODE) {
+    Serial.print("Setting network ID to ");
+    Serial.print(NETWORK_ID);
+    Serial.print("... ");
+  }
   sendATCommand("AT+NETWORKID=" + String(NETWORK_ID));
   delay(500);
   
   // Get current parameters
-  Serial.println("Getting module parameters...");
+  if (DEBUG_MODE) Serial.println("Getting module parameters...");
   sendATCommand("AT+PARAMETER?");
   delay(500);
   
-  Serial.println("Configuration complete!");
+  if (DEBUG_MODE) Serial.println("Configuration complete!");
 }
 
 /**
@@ -264,15 +322,17 @@ void configureLoRaModule() {
  */
 void sendATCommand(String command) {
   loraSerial.println(command);
-  Serial.print("Sent: ");
-  Serial.println(command);
+  if (DEBUG_MODE) {
+    Serial.print("Sent: ");
+    Serial.println(command);
+  }
   
   // Wait for response
   delay(100);
   while (loraSerial.available()) {
     String response = loraSerial.readStringUntil('\n');
     response.trim();
-    if (response.length() > 0) {
+    if (response.length() > 0 && DEBUG_MODE) {
       Serial.print("Response: ");
       Serial.println(response);
     }
@@ -293,17 +353,17 @@ void displaySignalQuality(int rssi) {
   if (rssi > RSSI_EXCELLENT) {
     // Excellent signal - Green LED
     digitalWrite(LED_GREEN_PIN, HIGH);
-    Serial.println("Signal Quality: EXCELLENT (Green)");
+    if (DEBUG_MODE) Serial.println("Signal Quality: EXCELLENT (Green)");
   } 
   else if (rssi > RSSI_GOOD) {
     // Good signal - Yellow LED
     digitalWrite(LED_YELLOW_PIN, HIGH);
-    Serial.println("Signal Quality: GOOD (Yellow)");
+    if (DEBUG_MODE) Serial.println("Signal Quality: GOOD (Yellow)");
   } 
   else {
     // Weak signal - Red LED
     digitalWrite(LED_RED_PIN, HIGH);
-    Serial.println("Signal Quality: WEAK (Red)");
+    if (DEBUG_MODE) Serial.println("Signal Quality: WEAK (Red)");
   }
 }
 
@@ -316,10 +376,12 @@ void processReceivedMessage(String message) {
   
   // Check if it's a received message
   if (message.startsWith("+RCV=")) {
-    Serial.println();
-    Serial.println("--- Message Received ---");
-    Serial.print("Raw: ");
-    Serial.println(message);
+    if (DEBUG_MODE) {
+      Serial.println();
+      Serial.println("--- Message Received ---");
+      Serial.print("Raw: ");
+      Serial.println(message);
+    }
     
     // Parse the message
     // Format: +RCV=100,7,TURN ON,-45,10
@@ -337,11 +399,20 @@ void processReceivedMessage(String message) {
       String snr = message.substring(fourthComma + 1);
       
       // Display message details
-      Serial.println("Sender Address: " + senderAddress);
-      Serial.println("Data Length: " + dataLength);
-      Serial.println("Command: " + data);
-      Serial.println("RSSI: " + rssi + " dBm");
-      Serial.println("SNR: " + snr + " dB");
+      if (DEBUG_MODE) {
+        Serial.println("Sender Address: " + senderAddress);
+        Serial.println("Data Length: " + dataLength);
+        Serial.println("Command: " + data);
+        Serial.println("RSSI: " + rssi + " dBm");
+        Serial.println("SNR: " + snr + " dB");
+      } else {
+        // Production mode: only essential info
+        Serial.print("RX: ");
+        Serial.print(data);
+        Serial.print(" [");
+        Serial.print(rssi);
+        Serial.println(" dBm]");
+      }
       
       // Convert RSSI to integer and display signal quality
       int rssiValue = rssi.toInt();
@@ -351,10 +422,12 @@ void processReceivedMessage(String message) {
       processCommand(data);
     }
     
-    Serial.println("------------------------");
-    Serial.println();
+    if (DEBUG_MODE) {
+      Serial.println("------------------------");
+      Serial.println();
+    }
     
-  } else if (message.length() > 0) {
+  } else if (message.length() > 0 && DEBUG_MODE) {
     // Print other responses (like +OK, +ERR, etc.)
     Serial.print("Module: ");
     Serial.println(message);
@@ -371,21 +444,23 @@ void processCommand(String command) {
   if (command == "TURN ON") {
     digitalWrite(LED_PIN, HIGH);
     ledState = true;
-    Serial.println(">>> LED turned ON <<<");
+    if (DEBUG_MODE) Serial.println(">>> LED turned ON <<<");
   } 
   else if (command == "TURN OFF") {
     digitalWrite(LED_PIN, LOW);
     ledState = false;
-    Serial.println(">>> LED turned OFF <<<");
+    if (DEBUG_MODE) Serial.println(">>> LED turned OFF <<<");
   } 
-  else {
+  else if (DEBUG_MODE) {
     Serial.print(">>> Unknown command: ");
     Serial.print(command);
     Serial.println(" <<<");
     Serial.println("Valid commands: 'TURN ON' or 'TURN OFF'");
   }
   
-  // Display current LED state
-  Serial.print("LED State: ");
-  Serial.println(ledState ? "ON" : "OFF");
+  // Display current LED state (only in debug mode)
+  if (DEBUG_MODE) {
+    Serial.print("LED State: ");
+    Serial.println(ledState ? "ON" : "OFF");
+  }
 }
