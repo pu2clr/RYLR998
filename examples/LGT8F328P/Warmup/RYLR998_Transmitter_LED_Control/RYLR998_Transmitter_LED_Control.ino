@@ -47,11 +47,11 @@
 // RYLR998 module configuration
 #define LORA_BAUD_RATE 115200
 #define DEVICE_ADDRESS 6      // This device address
-#define TARGET_ADDRESS 1      // Receiver device address
-#define NETWORK_ID 6          // Network ID (must match receiver)
+#define TARGET_ADDRESS 5      // Receiver device address
+#define NETWORK_ID 1          // Network ID (must match receiver)
 
 // Range testing configuration
-#define BLINK_INTERVAL 1000   // 1000ms = 1 second between commands
+#define BLINK_INTERVAL 2000   // 1000ms = 1 second between commands
 
 // Create SoftwareSerial object for RYLR998
 SoftwareSerial loraSerial(LORA_RX_PIN, LORA_TX_PIN);
@@ -241,7 +241,7 @@ void sendLoRaCommand(String command) {
         responseReceived = true;
         
         if (response == "+OK") {
-          Serial.println("✓ Command sent successfully!");
+          Serial.println("Command sent successfully!");
         } else if (response.startsWith("+ERR")) {
           Serial.println("✗ Error sending command!");
         }
@@ -250,7 +250,7 @@ void sendLoRaCommand(String command) {
   }
   
   if (!responseReceived) {
-    Serial.println("⚠ No response from module");
+    Serial.println("No response from module");
   }
   
   Serial.println("-----------------------");

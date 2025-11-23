@@ -63,13 +63,76 @@
 #define LED_PIN 6          // Command LED (blinks with commands)
 
 // Signal quality indicator LEDs (Traffic Light)
-#define LED_GREEN_PIN 7    // Excellent signal (RSSI > -80 dBm)
-#define LED_YELLOW_PIN 8   // Good signal (RSSI -80 to -100 dBm)
-#define LED_RED_PIN 9      // Weak signal (RSSI < -100 dBm)
+#define LED_GREEN_PIN 7    // Excellent signal
+#define LED_YELLOW_PIN 8   // Good signal
+#define LED_RED_PIN 9      // Weak signal
 
-// Signal quality thresholds
-#define RSSI_EXCELLENT -80   // Green LED threshold
-#define RSSI_GOOD -100       // Yellow/Red LED threshold
+// ============================================================================
+// RSSI THRESHOLD CONFIGURATION
+// ============================================================================
+// Choose ONE of the three profiles below by uncommenting the desired option.
+// These thresholds are based on LoRa technical specifications and practical
+// field testing experience.
+//
+// TECHNICAL BACKGROUND:
+// ---------------------
+// - RYLR998 Sensitivity: -148 dBm (manufacturer spec)
+// - General LoRa ranges (IEEE/Semtech):
+//   * RSSI > -70 dBm:     Excellent (very close, line of sight)
+//   * -70 to -90 dBm:     Very Good (reliable communication)
+//   * -90 to -110 dBm:    Good (acceptable, some obstacles)
+//   * -110 to -125 dBm:   Weak (limit, possible packet loss)
+//   * < -125 dBm:         Critical (unstable communication)
+//
+// HOW TO CHOOSE:
+// --------------
+// - CONSERVATIVE: For critical applications, no packet loss tolerance
+// - BALANCED: Recommended for most applications, good margin of safety
+// - AGGRESSIVE: To maximize LoRa range, accepts occasional packet loss
+//
+// VALIDATION METHOD:
+// ------------------
+// 1. During field tests, note RSSI values at different distances
+// 2. Count packet losses at each location (transmitter sends every 1 second)
+// 3. Adjust thresholds based on your requirements:
+//    - Green:  0% packet loss acceptable
+//    - Yellow: 0-5% packet loss acceptable
+//    - Red:    >5% packet loss (edge of coverage)
+// ============================================================================
+
+// Option 1: CONSERVATIVE Profile (High reliability, safety margin)
+// Use for: Critical applications, environments with variable interference
+// #define RSSI_EXCELLENT -75   // Green LED threshold
+// #define RSSI_GOOD -95        // Yellow/Red LED boundary
+
+// Option 2: BALANCED Profile (Recommended for most applications)
+// Use for: General IoT applications, good balance between range and reliability
+#define RSSI_EXCELLENT -85   // Green LED threshold
+#define RSSI_GOOD -110       // Yellow/Red LED boundary
+
+// Option 3: AGGRESSIVE Profile (Maximum range)
+// Use for: Non-critical monitoring, maximizing coverage area
+// #define RSSI_EXCELLENT -90   // Green LED threshold
+// #define RSSI_GOOD -115       // Yellow/Red LED boundary
+
+// ============================================================================
+// SIGNAL QUALITY INTERPRETATION (based on selected profile)
+// ============================================================================
+// GREEN LED:  RSSI > RSSI_EXCELLENT
+//   - Strong signal, optimal for deployment
+//   - Expect 0% packet loss
+//   - Suitable for real-time critical applications
+//
+// YELLOW LED: RSSI between RSSI_EXCELLENT and RSSI_GOOD
+//   - Acceptable signal for LoRa technology
+//   - Reliable communication expected
+//   - Suitable for most IoT applications
+//
+// RED LED:    RSSI < RSSI_GOOD
+//   - Weak signal, approaching coverage limit
+//   - May experience occasional packet loss
+//   - Consider optimization (antenna, position, repeaters)
+// ============================================================================
 
 // RYLR998 module configuration
 #define LORA_BAUD_RATE 115200
@@ -106,6 +169,8 @@ void setup() {
   
   // Initial LED test - traffic light sequence
   Serial.println("Testing signal quality LEDs...");
+
+  digitalWrite(LED_PIN, HIGH);
   digitalWrite(LED_GREEN_PIN, HIGH);
   delay(500);
   digitalWrite(LED_GREEN_PIN, LOW);
@@ -115,6 +180,9 @@ void setup() {
   digitalWrite(LED_RED_PIN, HIGH);
   delay(500);
   digitalWrite(LED_RED_PIN, LOW);
+  digitalWrite(LED_PIN, LOW);
+  
+
   Serial.println("Signal Quality Indicator ready:");
   Serial.println("  Pin 7 (GREEN)  = Excellent signal (RSSI > -80 dBm)");
   Serial.println("  Pin 8 (YELLOW) = Good signal (-80 to -100 dBm)");

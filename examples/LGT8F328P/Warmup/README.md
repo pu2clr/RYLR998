@@ -1,6 +1,6 @@
 # LGT8F328P Warmup Examples
 
-## 🔥 About This Section
+## About This Section
 
 This **Warmup** folder contains **Proof of Concept (PoC)** examples designed to help you quickly validate and test the RYLR998 LoRa module functionality before committing to a full-scale project. These examples serve as simple, practical tools for:
 
@@ -10,7 +10,7 @@ This **Warmup** folder contains **Proof of Concept (PoC)** examples designed to 
 - **Quick Prototyping**: Get a working system in minutes, not hours
 - **Learning Platform**: Build confidence with LoRa technology through immediate feedback
 
-### 🎯 What Makes This a Good PoC?
+### What Makes This a Good PoC?
 
 **Simple Setup:**
 - Minimal hardware requirements (2 microcontrollers, 2 LoRa modules, LEDs)
@@ -57,50 +57,50 @@ Once you're comfortable with these warmup examples, you'll be ready to explore m
 
 ---
 
-## 🎓 Using This as a Proof of Concept
+## Using This as a Proof of Concept
 
 ### Decision Framework
 
 Use this PoC to answer key questions before committing to LoRa for your project:
 
 **1. Range & Coverage Assessment**
-- ✅ **Question:** Will LoRa cover my required area?
+- **Question:** Will LoRa cover my required area?
 - **Test:** Walk the entire coverage area with receiver, note signal quality LEDs
 - **Success Criteria:** Green or Yellow LEDs in all critical locations
 - **Decision:** If mostly Red LEDs, consider additional gateways or different technology
 
 **2. Signal Penetration**
-- ✅ **Question:** Can LoRa penetrate my building materials?
+- **Question:** Can LoRa penetrate my building materials?
 - **Test:** Place transmitter outside/inside, test receiver in various rooms
 - **Success Criteria:** Consistent Green/Yellow in target areas
 - **Decision:** Red LEDs indicate need for internal repeaters or alternative placement
 
 **3. Reliability Assessment**
-- ✅ **Question:** Is the communication reliable enough?
+- **Question:** Is the communication reliable enough?
 - **Test:** Count missed blinks over 5-10 minutes (should be 300-600 blinks)
 - **Success Criteria:** <5% packet loss (< 15-30 missed blinks)
 - **Decision:** High packet loss suggests need for optimization or different approach
 
 **4. Power Consumption Validation**
-- ✅ **Question:** Will battery power last for my application?
+- **Question:** Will battery power last for my application?
 - **Test:** Power transmitter with battery, measure current, calculate runtime
 - **Success Criteria:** Meets your deployment requirements
 - **Decision:** If insufficient, consider sleep modes or different power strategy
 
 ### PoC Success Metrics
 
-**Green Light to Proceed:** ✅
+**Green Light to Proceed:** 
 - Green/Yellow signal LEDs in >80% of coverage area
 - Packet loss <5% in target locations
 - Signal penetrates required obstacles
 - Battery life meets requirements (if applicable)
 
-**Yellow - Needs Optimization:** ⚠️
+**Yellow - Needs Optimization:** 
 - Yellow/Red LEDs in 50-80% of area
 - Packet loss 5-15%
 - May need antenna improvements or positioning changes
 
-**Red - Reconsider Approach:** 🛑
+**Red - Reconsider Approach:** 
 - Red LEDs or no signal in >50% of area
 - Packet loss >15%
 - Poor obstacle penetration
@@ -188,11 +188,73 @@ Signal Quality Traffic Light:
 
 **Signal Quality Interpretation:**
 
+The receiver uses configurable RSSI thresholds to indicate signal quality. Three profiles are available in the code:
+
+#### Default Configuration (BALANCED Profile - Recommended)
+
 | LED Color | RSSI Range | Signal Quality | What It Means |
 |-----------|------------|----------------|---------------|
-| 🟢 **GREEN** | > -80 dBm | **Excellent** | Perfect signal, optimal location for deployment |
-| 🟡 **YELLOW** | -80 to -100 dBm | **Good** | Acceptable signal, reliable communication expected |
-| 🔴 **RED** | < -100 dBm | **Weak** | Marginal signal, may experience packet loss |
+| 🟢 **GREEN** | > -85 dBm | **Excellent** | Perfect signal, optimal location for deployment |
+| 🟡 **YELLOW** | -85 to -110 dBm | **Good** | Acceptable signal, reliable communication expected |
+| 🔴 **RED** | < -110 dBm | **Weak** | Marginal signal, may experience packet loss |
+
+#### Available Threshold Profiles
+
+You can change the profile by editing the `RYLR998_Receiver_LED_Control.ino` file. Simply uncomment your preferred option:
+
+**1. CONSERVATIVE Profile** (High reliability, safety margin)
+```cpp
+#define RSSI_EXCELLENT -75   // Green threshold
+#define RSSI_GOOD -95        // Yellow/Red boundary
+```
+- **Use for:** Critical applications, no packet loss tolerance
+- **Green:** RSSI > -75 dBm (very strong signal only)
+- **Yellow:** -75 to -95 dBm (good signal)
+- **Red:** < -95 dBm (approaching limit)
+
+**2. BALANCED Profile** (Recommended - Default)
+```cpp
+#define RSSI_EXCELLENT -85   // Green threshold
+#define RSSI_GOOD -110       // Yellow/Red boundary
+```
+- **Use for:** Most IoT applications, good range/reliability balance
+- **Green:** RSSI > -85 dBm (strong signal)
+- **Yellow:** -85 to -110 dBm (acceptable for LoRa)
+- **Red:** < -110 dBm (weak but may still work)
+
+**3. AGGRESSIVE Profile** (Maximum range)
+```cpp
+#define RSSI_EXCELLENT -90   // Green threshold
+#define RSSI_GOOD -115       // Yellow/Red boundary
+```
+- **Use for:** Non-critical monitoring, maximizing coverage
+- **Green:** RSSI > -90 dBm (decent signal)
+- **Yellow:** -90 to -115 dBm (pushing LoRa limits)
+- **Red:** < -115 dBm (very weak, unstable)
+
+#### Technical Background
+
+These thresholds are based on:
+
+**RYLR998 Specifications:**
+- Receiver sensitivity: -148 dBm (manufacturer specification)
+- Typical LoRa operation: -120 to -130 dBm practical limit
+
+**IEEE/Semtech LoRa Guidelines:**
+- RSSI > -70 dBm: Excellent (very close, line of sight)
+- -70 to -90 dBm: Very Good (reliable communication)
+- -90 to -110 dBm: Good (acceptable, some obstacles)
+- -110 to -125 dBm: Weak (limit, possible packet loss)
+- < -125 dBm: Critical (unstable communication)
+
+**How to Choose Your Profile:**
+
+1. **Run field tests** with the default BALANCED profile
+2. **Monitor packet loss** at different locations (transmitter sends every 1 second)
+3. **Adjust if needed:**
+   - If you see red LEDs but 0% packet loss → use AGGRESSIVE profile
+   - If you see yellow LEDs with >5% packet loss → use CONSERVATIVE profile
+4. **Document RSSI values** at coverage boundaries for future reference
 
 **Visual Operation:**
 ```
@@ -373,9 +435,16 @@ Command: TURN OFF
 
 2. **Baseline Test:**
    - Place both devices close together (1-2 meters)
-   - Verify LED is blinking every 1 second
+   - Verify command LED is blinking every 1 second
+   - **Note which signal quality LED is ON** (should be GREEN)
    - Check Serial Monitor on receiver for RSSI/SNR values
    - Typical close-range RSSI: -30 to -50 dBm
+
+3. **Initial Threshold Validation:**
+   - Start with the **BALANCED profile** (default in code)
+   - Record RSSI values at different distances
+   - Count missed blinks (packet loss) at each location
+   - This data will help you choose the best profile for your environment
 
 3. **Coverage Mapping:**
    - **Fix transmitter position** at strategic location (e.g., center of building, rooftop, etc.)
@@ -387,31 +456,59 @@ Command: TURN OFF
      - Record SNR (Signal-to-Noise Ratio)
      - Mark location based on traffic light color
 
-4. **Signal Quality Reference:**
-   - **🟢 Excellent (Green LED):** RSSI > -80 dBm, SNR > 10 dB
+4. **Signal Quality Reference (BALANCED Profile - Default):**
+   - 🟢 **Excellent (Green LED):** RSSI > -85 dBm, SNR > 10 dB
      - Command LED blinks perfectly every 1 second
      - Ideal location for deployment
-   - **🟡 Good (Yellow LED):** RSSI -80 to -100 dBm, SNR 5-10 dB
+     - Expect 0% packet loss
+   - 🟡 **Good (Yellow LED):** RSSI -85 to -110 dBm, SNR 5-10 dB
      - Command LED blinks consistently
-     - Acceptable for most applications
-   - **🔴 Weak (Red LED):** RSSI < -100 dBm, SNR < 5 dB
+     - Acceptable for most LoRa applications
+     - Expect <5% packet loss
+   - 🔴 **Weak (Red LED):** RSSI < -110 dBm, SNR < 5 dB
      - Command LED may miss some blinks
      - At edge of coverage, consider optimization
-   - **⚫ No Signal:** No LED activity
+     - Expect >5% packet loss
+   - ⚫ **No Signal:** No LED activity
      - Outside coverage area
+     - No communication possible
 
-5. **Document Results:**
-   - Create a coverage map
-   - Note obstacles (walls, metal structures, etc.)
+   > **Note:** These values are based on the BALANCED profile. If you changed to CONSERVATIVE or AGGRESSIVE profile, the thresholds will be different (see code comments).
+
+5. **Validate and Adjust Thresholds (Important!):**
+   
+   **Testing Method:**
+   - At each test location, count packet loss over 5 minutes
+   - Transmitter sends 300 messages (1 per second × 5 minutes)
+   - Count how many command LED blinks you missed
+   - Calculate: Packet Loss % = (Missed / 300) × 100
+   
+   **Adjustment Guide:**
+   - If **Green LED** shows but you have packet loss → Profile is too aggressive
+   - If **Red LED** shows but you have 0% packet loss → Profile is too conservative
+   - If **Yellow LED** shows with <5% packet loss → Profile is perfect!
+   
+   **Example from your tests:**
+   - 100m with obstacles → Yellow LED, 0% loss → GOOD! ✓
+   - 500m with obstacles → Red LED, some loss → Expected for Red ✓
+   - This validates the BALANCED profile works well for your environment
+
+6. **Document Results:**
+   - Create a coverage map showing LED colors at each location
+   - Note RSSI values and packet loss percentages
+   - Mark obstacles (walls, metal structures, etc.)
+   - Document which profile works best for your environment
    - Test at different times of day if possible
    - Consider antenna height and orientation
 
-6. **Optimization:**
+7. **Optimization:**
    - If coverage is insufficient:
+     - First, try AGGRESSIVE profile to see if communication is still reliable
      - Adjust antenna position/orientation
-     - Try different transmitter locations
+     - Try different transmitter locations (higher elevation helps)
      - Consider using external antennas
      - Evaluate adding repeaters/gateways
+     - Check LoRa parameters (AT+PARAMETER?)
 
 **What to Monitor on Receiver:**
 
